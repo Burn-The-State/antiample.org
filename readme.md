@@ -1,3 +1,2 @@
-# burn the state
-
+# XAMP Home page.
 
