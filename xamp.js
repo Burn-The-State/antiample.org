@@ -1661,7 +1661,7 @@ function OUTPUT(){
 	*/
 	$('#ID_NAME').html(XAMP-INFO.INFO REQUIRED));
 	
-	
+
 	
 }
 
@@ -1686,67 +1686,23 @@ window.addEventListener('load', async (event) => {
 			
 			if (err != null) console.error("An error occurred: "+err);
 			else if (accounts.length == 0){
+				//WHAT TO DO WHEN WALLET IS NOT CONNECTED
 				if (DISPLAY_CONSOLE) console.log('NO ACCOUNTS CONNECTED!');
-				var durp = await updateGlobal().catch(e => {
-					errorHandling(e, 'updateGlobal()');
-				});
-				
-				await syncALL();
+				OUTPUT();
 			}			
 			else {
+				
+				//WHAT TO DO WHEN WALLET IS CONNECTED
+				
+				
+				//PERFORMANCE TESTING.
 				var start = performance.now();
-				await syncALL();
-				
-				
-				await fillYFKAinfo();
-				
 				
 				console.log("User is logged in to MetaMask");
 				if (DISPLAY_CONSOLE) console.log('ACCOUNTS CONNECTED!');
-				await updateGlobal();
+				OUTPUT();
 
-				
-				var updateAP = await updateActivePool().catch(e => {
-						errorHandling(e, 'updateActivePool()');
-				});
-				
-				if (updateAP != "error"){
-					var updateUS = await updateUserStats().catch(e => {
-						errorHandling(e, 'updateUserStats()');
-					});
-				}
-				
-				
 
-				if (updateUS != "error"){
-					await setStakeBalance({
-						currentTarget: {
-							value: 'XAMP',
-						}
-					}).catch(e => {
-						errorHandling(e, 'setStakeBalance()');
-					});
-					await setRedeemBalance({
-						currentTarget: {
-							value: 'XAMP',
-						}
-					}).catch(e => {
-						errorHandling(e, 'setRedeemBalance()');
-					});
-					await setUnstakeBalance({
-							currentTarget: {
-							value: 'XAMP',
-						}
-					}).catch(e => {
-						errorHandling(e, 'setUnstakeBalance()');
-					});
-					$('#isConnected').html('wallet connected');
-				}
-				setInterval(
-				  () => updateUserStats(),
-				  10000
-				);
-				await FillInfo();
 				if (DISPLAY_CONSOLE) console.log("---END OF INITIAL LOAD---");
 				var end =	performance.now();
 				var time = end - start;
@@ -1784,6 +1740,7 @@ await getGlobalEmissionRate();
 await getStakes();
 await getGasPrices();
 await getBTSTotals();
+update_XAMP_STATS();
 console.log("STATES: ", STATES);
 
 }
