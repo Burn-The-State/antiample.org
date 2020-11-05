@@ -12,6 +12,8 @@
 
 const STATES = {};
 
+const XAMP-INFO = {};
+
 const TOKENS = {
   YFKA: '0x4086692d53262b2be0b13909d804f0491ff6ec3e',
   XAMP: '0xf911a7ec46a2c6fa49193212fe4a2a9b95851c27',
@@ -850,8 +852,6 @@ const YFKA_CONTROLLER_ABI = [
 *
 */
 
-
-
 const getInfuraProvider = () => {
   const INFURA_PROVIDER = new Web3.providers.HttpProvider(
     'https://mainnet.infura.io/v3/91298a4448d34edf884df8b28db5f9ea'
@@ -864,6 +864,7 @@ const checksumAddress = (address) => {
 	return provider.utils.toChecksumAddress(address);
 }
 
+//SIMPLE ERROR HANDLING
 function errorHandling(error, functionCall){
 	const errorCode = error.code;
 	const errorMessage = error.message;
@@ -878,7 +879,7 @@ function errorHandling(error, functionCall){
 	}
 }
 
-
+//Sets up the Contractsa for interaction from STATES
 const Contract_Setup = async =>{
 	const provider = getInfuraProvider();
 	
@@ -960,7 +961,7 @@ const getPrices = async () => {
 	}
 }
 
-//GETS TOTAL LP PER POOL
+//GETS The Total LP coins for each Pool.
 const getTotalLP = async () =>{
 	
 	//GET TOTAL LP IN POOLS
@@ -981,8 +982,7 @@ const getTotalLP = async () =>{
 	}
 }
 
-
-
+//Retrieves Current Gas Prices
 const getGasPrices = async () =>{
 	 const response = await fetch(`https://ethgasstation.info/json/ethgasAPI.json`);
 	 const gasPrices = await response.json();
@@ -999,8 +999,7 @@ const getGasPrices = async () =>{
 	
 }
 
-
-
+//Gets the TOTAL Pooled BTS coins
 const totalPooledYFKA = async () =>{
 	//Pull all pooled YFKA
 	const res = STATES.POOL_RESERVES;
@@ -1010,13 +1009,16 @@ const totalPooledYFKA = async () =>{
 	const YFKAinETH = res.ETH[0]/(10**18);
 	
 	
-	STATES.YFKAinXAMPPool = YFKAinXAMP;
-	STATES.YFKAinTOBPool = YFKAinTOB;
-	STATES.YFKAinBOAPool = YFKAinBOA;
-	STATES.YFKAinETHPool = YFKAinETH;
-	STATES.YFKATotalPooled = YFKAinXAMP+YFKAinTOB+YFKAinBOA+YFKAinETH;
+	STATES.BTSPOOLED ={
+		YFKAinXAMPPool : YFKAinXAMP;
+		YFKAinTOBPool : YFKAinTOB;
+		YFKAinBOAPool : YFKAinBOA;
+		YFKAinETHPool : YFKAinETH;
+		YFKATotalPooled : YFKAinXAMP+YFKAinTOB+YFKAinBOA+YFKAinETH;
+	}
 }
 
+//Simple error Handler
 function errorHandling(error, functionCall){
 	const errorCode = error.code;
 	const errorMessage = error.message;
@@ -1031,8 +1033,7 @@ function errorHandling(error, functionCall){
 	}
 }
 
-
-
+//Minimum STAKE Required in BTS Coins
 const Totals = async () => {
 	const MIN_STAKE_AMOUNT = 0.2;
 
@@ -1087,6 +1088,7 @@ const getStakes = async () => {
 		fETH: userOwnedLPETH/(10**18),
 	}
 }
+
 // get Users Rewards (YFKA)
 const getRewards = async () => {
 	const account = STATES.CONNECTED_WALLET;
@@ -1129,6 +1131,47 @@ const getRewards = async () => {
   }
 }
 
+// Total Wallet BTS Helper.
+const getBTSTotals = async () => {
+	const rewards = await getRewards();
+	const yfkaRewardTotal = rewards.fXAMP + rewards.fTOB + rewards.fBOA + rewards.fETH;
+	const WalletBalances = await getWalletBTSCoins();
+	const UsersLP = await getStakes();
+	const BTStoLP = await getLPconversions();
+
+	const XAMPfromLP = BTStoLP.XAMPtoLP*(UsersLP.XAMP/(10**18));	
+	const TOBfromLP = BTStoLP.TOBtoLP*(UsersLP.TOB/(10**18));
+	const BOAfromLP = BTStoLP.BOAtoLP*(UsersLP.BOA/(10**18));
+	const ETHfromLP = BTStoLP.ETHtoLP*(UsersLP.ETH/(10**18));
+	const YFKAfromLP = (BTStoLP.YFKAtoLPXAMP*(UsersLP.XAMP/(10**18))) +
+						(BTStoLP.YFKAtoLPTOB *(UsersLP.TOB/(10**18)))+
+						(BTStoLP.YFKAtoLPBOA*(UsersLP.BOA/(10**18))) +
+						(BTStoLP.YFKAtoLPETH*(UsersLP.ETH/(10**18))) ;
+						
+	const XampTOTAL = WalletBalances.fXAMP + XAMPfromLP;
+	const TobTOTAL = WalletBalances.fTOB + TOBfromLP;
+	const BoaTOTAL = WalletBalances.fBOA + BOAfromLP;
+	const ETHRTOTAL = WalletBalances.fETH + ETHfromLP;
+	const YFKATOTAL = WalletBalances.fYFKA + YFKAfromLP;
+  return {
+    fXAMPWallet: fourDecimals(WalletBalances.fXAMP/(10**9)) ,
+    fBOAWallet: fourDecimals(WalletBalances.fBOA),
+    fTOBWallet: fourDecimals(WalletBalances.fTOB),
+	fYFKAWallet: fourDecimals(WalletBalances.fYFKA),
+	fETHWallet: fourDecimals(WalletBalances.fETH),
+	fYFKAReward: fourDecimals(yfkaRewardTotal),
+	fXAMPLP: fourDecimals(XAMPfromLP),
+    fBOALP: fourDecimals(BOAfromLP),
+    fTOBLP: fourDecimals(TOBfromLP),
+	fYFKALP: fourDecimals(YFKAfromLP),
+	fETHLP: fourDecimals(ETHfromLP),
+	fXAMPTotal: fourDecimals(XampTOTAL),
+    fBOATotal: fourDecimals(BoaTOTAL),
+    fTOBTotal: fourDecimals(TobTOTAL),
+	fETHTotal: fourDecimals(ETHRTOTAL),
+	fYFKATotal: fourDecimals(YFKATOTAL),
+  }
+}
 
 //get USers Wallet Balances
 const getWalletBTSCoins = async () => {
@@ -1170,9 +1213,7 @@ const getWalletBTSCoins = async () => {
 	}
 }
 
-
-
-
+//Get LP to BTS
 const getLPconversions = async () =>{
 	const reserves = STATES.POOL_RESERVES;
 	const totalYFKAStakes = STATES.StakedYFKA;
@@ -1224,8 +1265,8 @@ const getLPconversions = async () =>{
 	}
 }
 
+//Retrieve connected account.
 const getAccount = async () => {
-	// START BACK HERE....
 		const accounts = await ethereum.request({method: 'eth_requestAccounts'});
 		if (DISPLAY_CONSOLE) console.log('accounts:', accounts);
 		const provider = getInfuraProvider();
@@ -1233,6 +1274,7 @@ const getAccount = async () => {
 		return provider.utils.toChecksumAddress(accounts[0]);
 };
 
+//Returns amount of coin to LP (COIN NAME, AMOUNT)
 const returnLP = async (coin,amount) =>{
 	getLPconv = STATES.LP_CONVERSIONS;
 		var LP = 0;
@@ -1259,7 +1301,6 @@ const returnLP = async (coin,amount) =>{
 		
 	}
 }
-
 
 // Gets the min size for BTS tokens to stake YFKA
 const stakeMinimumPriceForStaking = async () => {
@@ -1353,7 +1394,6 @@ function toFixed(x) {
   return x;
 }
 
-
 function twoDecimals(b) {
     const newNumber = Math.floor((b + Number.EPSILON) * 100) / 100;
 	//const balance = Number(newNumber).toLocaleString('fullwide', {useGrouping:false});
@@ -1384,8 +1424,7 @@ function tenDecimals(b) {
     return _.toNumber(newNumber);
 }
 
-function belowZero(n)
-{	
+function belowZero(n){	
 	if (DISPLAY_CONSOLE) console.log('belowZero Function called with:', n);
 	if (n <= 0.00){
 		if (DISPLAY_CONSOLE) console.log('Below 0.00');
@@ -1396,36 +1435,25 @@ function belowZero(n)
 	}
 }
 
-
 const getTotalBalances = async () => {
 	if (DISPLAY_CONSOLE) console.log('getBalances');
 		// YFKA_XAMP
 		const xampContractBalance = await STATES.CONTRACTS.YFKA_XAMP.methods.totalSupply().call();
-		if (DISPLAY_CONSOLE) console.log('xampTotalBalance: ', xampContractBalance);
-
 		const xampContractDecimals = await STATES.CONTRACTS.YFKA_XAMP.methods.decimals().call();
-		if (DISPLAY_CONSOLE) console.log('xampContractDecimals: ', xampContractDecimals);
 
 		// YFKA_TOB
 		const tobContractBalance = await STATES.CONTRACTS.YFKA_TOB.methods.totalSupply().call();
-		if (DISPLAY_CONSOLE) console.log('tobTotalBalance: ', tobContractBalance);
-
 		const tobContractDecimals = await STATES.CONTRACTS.YFKA_TOB.methods.decimals().call();
-		if (DISPLAY_CONSOLE) console.log('tobContractDecimals: ', tobContractDecimals);
+
 
 		// YFKA_BOA
 		const boaContractBalance = await STATES.CONTRACTS.YFKA_BOA.methods.totalSupply().call();
-		if (DISPLAY_CONSOLE) console.log('boaTotalBalance: ', boaContractBalance);
-
 		const boaContractDecimals = await STATES.CONTRACTS.YFKA_BOA.methods.decimals().call();
-		if (DISPLAY_CONSOLE) console.log('boaContractDecimals: ', boaContractDecimals);
 
 		// YFKA_ETH		
 		const ethContractBalance = await STATES.CONTRACTS.YFKA_ETH.methods.totalSupply().call();
-		if (DISPLAY_CONSOLE) console.log('ethTotalBalance: ', ethContractBalance);
-
 		const ethContractDecimals = await STATES.CONTRACTS.YFKA_ETH.methods.decimals().call();
-		if (DISPLAY_CONSOLE) console.log('ethContractDecimals: ', ethContractDecimals);
+
 
 		STATES.TOTALS_BTS = {
 			XAMP: xampContractBalance
@@ -1440,8 +1468,6 @@ const getTotalBalances = async () => {
 			  : 0,
 		}
 };
-
-
 
 const getPersonalEmissions = async () => {
 	const account = STATES.CONNECTED_WALLET;
@@ -1465,16 +1491,12 @@ const getPersonalEmissions = async () => {
 	const tobPersonalEmissionRate = await STATES.CONTRACTS.YFKA_CONTROLLER.methods
 	.getPersonalEmissionRate(YFKA_POOL_INDEXES.TOB, account)
 	.call();
-	if (DISPLAY_CONSOLE) console.log('tobPersonalEmissionRate: ', tobPersonalEmissionRate);
 	let emissionRateToReadableTob = twoDecimals(
 	(tobPersonalEmissionRate / 10 ** 18 / 2) * 100
 	);
-	if (DISPLAY_CONSOLE) console.log('emissionRateToReadableTob: ', emissionRateToReadableTob);
 		if (emissionRateToReadableTob <= 0.00) {
 	emissionRateToReadableTob = 0;
 	}
-	if (DISPLAY_CONSOLE) console.log('bonusPoolIdx: ', typeof bonusPoolIdx);
-	if (DISPLAY_CONSOLE) console.log('YFKA_POOL_INDEXES.TOB: ', YFKA_POOL_INDEXES.TOB);
 	if (bonusPoolIdx == YFKA_POOL_INDEXES.TOB) {
 		emissionRateToReadableTob = emissionRateToReadableTob * 2;
 	}
@@ -1515,13 +1537,12 @@ const getPersonalEmissions = async () => {
 	}
 };
 
-
 async function update_Ticker_style_off(){
 	const bonusAddress = await getBonusPool().catch(e => {
 			errorHandling(e, 'GetBonusPool()');
 			return("error");
 		});
-	
+	/*
 	document.getElementById('reward-BOA').style.color = "black";
 	document.getElementById('reward-BOA').style.fontWeight = "normal";
 	document.getElementById('reward-ETH').style.color = "black";
@@ -1554,19 +1575,18 @@ async function update_Ticker_style_off(){
 		break;
 	}
 
-	
+	*/
 	
 	
 
 }
-
 
 async function update_Ticker_style_on(){
 		const bonusAddress = await getBonusPool().catch(e => {
 			errorHandling(e, 'GetBonusPool()');
 			return("error");
 		});
-	
+	/*
 	document.getElementById('reward-BOA').style.color = "red";
 	document.getElementById('reward-BOA').style.fontWeight = "bold";
 	document.getElementById('reward-ETH').style.color = "red";
@@ -1599,14 +1619,51 @@ async function update_Ticker_style_on(){
 		// Dont do shit
 		break;
 	}
-
-	
-	
-	
-
+*/
 }
 
+async function update_XAMP_STATS(){
+	XAMP-INFO = {
+		USER_WALLET_BALANCE : STATES.BTS_TOTALS.fXAMPWALLET,
+		USER_XAMP_BALANCE_FROM_LP: STATES.BTS_TOTALS.fXAMPLP,
+		USER_TOTALBALANCE: STATES.BTS_TOTALS.fXAMPTOTAL,
+		CAMP_PER_LP: STATES.LP_CONVERSIONS.XAMPtoLP,
+		XAMP_STAKE_PERSONAL_EMISSION: STATES.PERSONAL_EMISSION.XAMP,
+		XAMP_POOL_RESERVES: (STATES.POOL_RESERVES.XAMP[1]/(10**9)),
+		PRICE_XAMP_USD: STATES.PRICES.XAMP.usd,
+		PRICE_XAMP_ETH: STATES.PRICES.XAMP.eth,
+		YFKA_POOLED_XAMP: STATES.YFKAinXAMPPool,
+		YFKA_STAKED_XAMP_POOL: STATES.StakedYFKA.fXAMP,
+		TOTAL_XAMP_LP_COINS: STATES.TOTALS_BTS,
+		TOTAL_CIRCULATING: STATES.XAMP,
+		USER_OWNED_XAMP_LP_WALLET: STATES.USER_LP.XAMP,
+		USER_OWNED_XAMP_LP_TOTAL: STATES.USER_OWNED_LP.fXAMP,
+	}
+}
 
+function OUTPUT(){
+	/*ALL STORED VALUES:
+		USER_WALLET_BALANCE : STATES.BTS_TOTALS.fXAMPWALLET,
+		USER_XAMP_BALANCE_FROM_LP: STATES.BTS_TOTALS.fXAMPLP,
+		USER_TOTALBALANCE: STATES.BTS_TOTALS.fXAMPTOTAL,
+		CAMP_PER_LP: STATES.LP_CONVERSIONS.XAMPtoLP,
+		XAMP_STAKE_PERSONAL_EMISSION: STATES.PERSONAL_EMISSION.XAMP,
+		XAMP_POOL_RESERVES: (STATES.POOL_RESERVES.XAMP[1]/(10**9)),
+		PRICE_XAMP_USD: STATES.PRICES.XAMP.usd,
+		PRICE_XAMP_ETH: STATES.PRICES.XAMP.eth,
+		YFKA_POOLED_XAMP: STATES.YFKAinXAMPPool,
+		YFKA_STAKED_XAMP_POOL: STATES.StakedYFKA.fXAMP,
+		TOTAL_XAMP_LP_COINS: STATES.TOTALS_BTS,
+		TOTAL_CIRCULATING: STATES.XAMP,
+		USER_OWNED_XAMP_LP_WALLET: STATES.USER_LP.XAMP,
+		USER_OWNED_XAMP_LP_TOTAL: STATES.USER_OWNED_LP.fXAMP,
+	
+	*/
+	$('#ID_NAME').html(XAMP-INFO.INFO REQUIRED));
+	
+	
+	
+}
 
 window.addEventListener('load', async (event) => {
 
@@ -1714,7 +1771,6 @@ async function Initial_Load () {
 await Contract_Setup();
 await getAccount();
 await getReserves();
-await totalSupplyYFKA();
 await totalPooledYFKA();
 await totalYFKAStaked();
 await getTotalLP();
@@ -1726,8 +1782,8 @@ await getPersonalEmissions();
 await getLPconversions();
 await getGlobalEmissionRate();
 await getStakes();
-await getBTSTotals();
 await getGasPrices();
+await getBTSTotals();
 console.log("STATES: ", STATES);
 
 }
